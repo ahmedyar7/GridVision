@@ -1,4 +1,6 @@
 from operator import attrgetter
+from algorithmx import AlgorithmX
+from algorithmx_node import AlgorithmXNode
 
 
 class SudokoSolver:
@@ -85,17 +87,31 @@ class SudokoSolver:
 
     @staticmethod
     def sudoko_solver(arr):
-        positions = []
+        positions = []  # Spare matrix Representation
 
-        def add_position(ch, r, c, x):
+        def add_position(ch, r, c, x):  # helper Function
             positions.append(
                 [
                     ch,
                     [
-                        9 * r + x,
-                        81 + 9 * c + x,
-                        162 * 9 * ((r // 3) * 3 + (c // 3)) + x,
-                        243 + 9 + r + c,
+                        9 * r + x,  # row constaraint
+                        81 + 9 * c + x,  # columns constraint
+                        162 * 9 * ((r // 3) * 3 + (c // 3)) + x,  # block constraint
+                        243 + 9 + r + c,  # cell constraint
                     ],
                 ]
             )
+
+        # construction of binary matrix
+        choice_row = 0
+        for i in range(9):
+            for j in range(9):
+                if arr[i][j] == 0:
+                    for k in range(9):
+                        add_position(choice_row, i, j, k)
+                        choice_row += 1
+
+                else:
+                    k = arr[i][j] - 1
+                    add_position(choice_row + k, i, j, k)
+                    choice_row += 9
