@@ -19,6 +19,7 @@ def extract_digit(cell_img):
         text = result[0]
         if text.isdigit():
             return int(text)
+
     return 0
 
 

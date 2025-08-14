@@ -1,14 +1,7 @@
 from img_processing import extract_grid
 from ocr_utils import extract_board
 from solver import solve_with_cpp
-
-
-def print_in_box(text):
-    border = "+" + "-" * (len(text) + 2) + "+"
-    middle = "| " + text + " |"
-    print(border)
-    print(middle)
-    print(border)
+from utils import print_in_box, print_sudoku
 
 
 if __name__ == "__main__":
@@ -20,13 +13,11 @@ if __name__ == "__main__":
     # Step 2: OCR digits into a board
     board = extract_board(warped)
 
-    print("Extracted Sudoku Board:")
-    for row in board:
-        print(row)
+    # Print unsolved board
+    print_sudoku(board, "Extracted Sudoku Board")
 
     # Step 3: Solve with fast C++ solver
-    print_in_box("Solved Sudoku")
-
     solved = solve_with_cpp(board)
-    for row in solved:
-        print(row)
+
+    # print_in_box("Solved Sudoku")
+    print_sudoku(solved, "Solved Sudoku Board")
