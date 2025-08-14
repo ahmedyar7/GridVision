@@ -1,19 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// Macros (optional)
-#define endl '\n'
-#define ll long long
-#define pb push_back
-#define all(x) (x).begin(), (x).end()
-
-// Fast I/O
-void fastIO() {
-  ios::sync_with_stdio(0);
-  cin.tie(nullptr);
-  cout.tie(nullptr);
-}
-
 void printBoard(const vector<vector<char>>& board) {
   for (int i = 0; i < 9; i++) {
     for (int j = 0; j < 9; j++) {
@@ -110,12 +97,4 @@ void solve() {
   printBoard(board);
 }
 
-int main() {
-  fastIO();
-  int T = 1;
-  cin >> T;  // remove this line if only one test case
-  while (T--) {
-    solve();
-  }
-  return 0;
-}
+int main() { solve(); }
