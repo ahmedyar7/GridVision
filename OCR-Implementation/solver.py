@@ -9,7 +9,7 @@ def solve_with_cpp(board):
 
     # Run the C++ solver
     result = subprocess.run(
-        ["sudoko_solver.exe"],  # use "sudoku_solver.exe" on Windows
+        ["./Helper/sudoko_solver.exe"],  # use "sudoku_solver.exe" on Windows
         input=input_str,
         text=True,
         capture_output=True,

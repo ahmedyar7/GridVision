@@ -3,7 +3,7 @@ import numpy as np
 import easyocr
 from solver import solve_with_cpp
 
-img_path = "./imgs/620sodukujan2013.jpg"
+img_path = "./imgs/sudoku_face_share1.png"
 
 # Load image
 img = cv2.imread(img_path)
@@ -101,18 +101,12 @@ for i in range(9):
 
 
 # print(sudoku_board)
+def print_in_box(text):
+    # Create top and bottom border
+    border = "+" + "-" * (len(text) + 2) + "+"
+    # Create the middle with text
+    middle = "| " + text + " |"
 
-if __name__ == "__main__":
-
-    print("Extracted Sudoku Board:")
-
-    print(type(board))
-    for row in board:
-        print(row)
-
-    print("\nSolved Sudoko")
-    solve_with_cpp(board)
-
-    solved = solve_with_cpp(board)
-    for row in solved:
-        print(row)
+    print(border)
+    print(middle)
+    print(border)
