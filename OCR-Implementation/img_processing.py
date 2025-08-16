@@ -39,16 +39,20 @@ def extract_grid(img_path, side=450):
 
     img = cv2.imread(img_path)
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Image Thresholding for sudoku
     img_thresh = cv2.adaptiveThreshold(
         img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
     )
 
+    # Finding contours for the image
     contours, _ = cv2.findContours(
         img_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
     contour = max(contours, key=cv2.contourArea)
 
-    peri = cv2.arcLength(contour, True)
+    peri = cv2.arcLength(contour, True)  # frame for the sukoku
+
     approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
     points = reorder(approx)
 

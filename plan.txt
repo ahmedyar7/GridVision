@@ -1,0 +1,59 @@
+Step-by-step plan
+
+Read + normalize the image
+
+Convert to grayscale.
+
+Denoise slightly (Gaussian blur).
+
+Create a strong, high-contrast binary mask of ink vs paper (adaptive threshold + invert).
+
+Find the puzzle outline (largest 4-sided contour)
+
+Find contours on the binary image.
+
+Keep the biggest contour that approximates to 4 points (the board).
+
+Reorder those 4 points (TL, TR, BR, BL).
+
+Perspective warp to a square top-down view
+
+Warp the board to a fixed size (e.g., 450×450). Now every cell is evenly sized.
+
+Re-threshold the warped image for crisp digits
+
+Adaptive threshold again on the warped board.
+
+Invert so digits are white (255) on a black (0) background — this makes counting ink easy.
+
+Split into the 81 cells
+
+Each cell is cell_h = H/9, cell_w = W/9.
+
+Take a small margin inside each cell (to avoid grid lines).
+
+Decide “blank vs digit” by the fraction of white pixels.
+
+Clean each digit region
+
+Morphological open (or erode→dilate) to remove specks.
+
+Keep only the largest connected component (the digit).
+
+Tight bounding box → center on a square canvas → resize to 28×28.
+
+Recognize the digit
+
+Option A (quick): Tesseract OCR with whitelist 1-9, --psm 10.
+
+Option B (robust): Your CNN (MNIST-style 28×28). Apply a confidence threshold; if low, mark as blank.
+
+Assemble the 9×9 array
+
+Fill a np.zeros((9,9), dtype=int) with recognized numbers.
+
+(Optional) Validate & debug
+
+Sanity checks (all in 0–9; not too many duplicates per row/col).
+
+If you get too few digits, check inversion, margins, or that the right contour was warped.
