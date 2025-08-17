@@ -1,6 +1,8 @@
-"""
+"""img_processing.py
+
 This module is responsible for reordering the image
- and extracting the grid for easyocr for character recognition
+and extracting the grid for easyocr for character recognition
+
 """
 
 import cv2
@@ -9,7 +11,7 @@ import numpy as np
 
 def reorder(points):
     """
-    The function reorder takes four points (usually from a contour of a square)
+    The function reorder takes four points (from a contour of a square)
     and returns them in a consistent order:
       - top-left
       - top-right,

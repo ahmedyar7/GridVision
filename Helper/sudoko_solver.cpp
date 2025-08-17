@@ -1,3 +1,9 @@
+/** sukoko_solver.cpp
+ *
+ * This is the C++ Implementation for solving the
+ * sukoku problem
+ **/
+
 #include <bits/stdc++.h>
 using namespace std;
 

@@ -8,6 +8,8 @@ def solve_with_cpp(board):
     )
 
     # Run the C++ solver
+    # For linux and macOS use .out instead of .exe
+
     result = subprocess.run(
         ["../Helper/sudoko_solver.exe"],  # use "sudoku_solver.exe" on Windows
         input=input_str,
