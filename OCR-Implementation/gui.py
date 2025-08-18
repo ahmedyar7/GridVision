@@ -1,9 +1,7 @@
 import os
-import sys
 from datetime import datetime
 
 from PySide6.QtWidgets import (
-    QApplication,
     QWidget,
     QLabel,
     QPushButton,
@@ -121,10 +119,3 @@ class SudokuGUI(QWidget):
             QMessageBox.critical(self, "Board Error", f"{e}")
         except Exception as e:
             QMessageBox.critical(self, "Unexpected Error", f"{type(e).__name__}: {e}")
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    w = SudokuGUI()
-    w.show()
-    sys.exit(app.exec())
