@@ -1,4 +1,4 @@
-/** sukoko_solver.cpp
+/** Helper/sukoko_solver.cpp
  *
  * This is the C++ Implementation for solving the
  * sukoku problem
