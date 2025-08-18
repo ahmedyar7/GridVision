@@ -17,6 +17,26 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 
 ---
 
+## Example Output:
+
+![alt text](assets/imagess.png)
+
+<table>
+    <caption>Sudoku Project Visuals</caption>
+    <tr>
+      <td>
+        <div class="square">
+          <img src="assets/image.png" alt="Image 1">
+        </div>
+      </td>
+      <td>
+        <div class="square">
+          <img src="assets/image-1.png" alt="Image 2">
+        </div>
+      </td>
+    </tr>
+  </table>
+
 ## 📂 Project Structure
 
 ```
@@ -94,7 +114,7 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 4. Run the OCR pipeline:
 
    ```bash
-   python main.py --image path/to/sudoku.jpg
+    python .\OCR-Implementation\main.py
    ```
 
 ---
