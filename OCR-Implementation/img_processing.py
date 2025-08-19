@@ -1,5 +1,6 @@
-"""img_processing.py
+"""img_processing.py"""
 
+"""
 This module is responsible for reordering the image
 and extracting the grid for easyocr for character recognition
 

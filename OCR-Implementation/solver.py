@@ -1,3 +1,10 @@
+"""solver.py"""
+
+"""
+This module is responsible for calling the 
+sudoko_solver.exe file to solve the sudoku
+"""
+
 import subprocess
 
 

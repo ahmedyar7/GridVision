@@ -1,3 +1,10 @@
+"""gui.py"""
+
+"""
+This file is responsible for making of the gui
+and reunning the relevent pipeline...
+"""
+
 import os
 from datetime import datetime
 

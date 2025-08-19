@@ -1,3 +1,11 @@
+"""main.py"""
+
+"""
+This module is the driver code that provides
+functionalithy...
+"""
+
+
 import sys
 
 from PySide6.QtWidgets import QApplication

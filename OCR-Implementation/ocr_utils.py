@@ -1,5 +1,6 @@
-"""ocr_utils.py
+"""ocr_utils.py"""
 
+"""ss
 This module is responsible for
     1. Extracting the digits from the Image using EasyOCr
     2. Extracting the actual board in form 2d array
