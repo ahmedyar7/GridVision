@@ -90,6 +90,25 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 
 ---
 
+## Tech Stack:
+
+<div align="center">
+
+  <img src="https://img.shields.io/badge/OpenCV-5C3EE8?logo=opencv&logoColor=white" alt="OpenCV">
+  <img src="https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=white" alt="NumPy">
+  <img src="https://img.shields.io/badge/EasyOCR-FFB300?logo=openai&logoColor=white" alt="EasyOCR">
+  <img src="https://img.shields.io/badge/Matplotlib-11557C?logo=plotly&logoColor=white" alt="Matplotlib">
+  <img src="https://img.shields.io/badge/C++-00599C?logo=cplusplus&logoColor=white" alt="C++">
+  <img src="https://img.shields.io/badge/G++-F34B7D?logo=gnu&logoColor=white" alt="G++">
+  <img src="https://img.shields.io/badge/Clang-262D3A?logo=llvm&logoColor=white" alt="Clang">
+  <img src="https://img.shields.io/badge/PySide6-41CD52?logo=qt&logoColor=white" alt="PySide6">
+  <img src="https://img.shields.io/badge/TensorFlow-FF6F00?logo=tensorflow&logoColor=white" alt="TensorFlow">
+  <img src="https://img.shields.io/badge/Keras-D00000?logo=keras&logoColor=white" alt="Keras">
+  <img src="https://img.shields.io/badge/Kaggle-20BEFF?logo=kaggle&logoColor=white" alt="Kaggle">
+  <img src="https://img.shields.io/badge/Pillow-3670A0?logo=python&logoColor=white" alt="Pillow">
+
+</div>
+
 ## 🔧 Installation & Setup
 
 1. Clone the repository:
