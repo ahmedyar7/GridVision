@@ -1,9 +1,9 @@
-# [AI Based Sudoku Solver](https://medium.com/p/ddefe5709ca6/edit)
+# [GridVision](https://medium.com/p/ddefe5709ca6/edit)
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-red.svg" alt="License: MIT">
-  <img src="https://img.shields.io/github/stars/ahmedyar7/<repo-name>?style=social" alt="GitHub Repo stars">
-  <img src="https://img.shields.io/github/forks/ahmedyar7/<repo-name>?style=social" alt="GitHub forks">
+  <img src="https://img.shields.io/github/stars/ahmedyar7/GridVision?style=social" alt="GitHub Repo stars">
+  <img src="https://img.shields.io/github/forks/ahmedyar7/GridVision?style=social" alt="GitHub forks">
 </p>
 
 An intelligent Sudoku solver that combines **Computer Vision**, **Optical Character Recognition (OCR)**, **Deep Learning (CNN)**, and **Recursive Backtracking (C++)** to solve Sudoku puzzles directly from images.
@@ -120,8 +120,8 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/ahmedyar7/sudoku-solver.git
-   cd sudoku-solver
+   git clone https://github.com/ahmedyar7/GridVision.git
+   cd GridVision
    ```
 
 2. Install Python dependencies:
