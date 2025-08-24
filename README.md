@@ -1,5 +1,11 @@
 # [AI Based Sudoku Solver](https://medium.com/p/ddefe5709ca6/edit)
 
+<p align="center">
+  <img src="https://img.shields.io/badge/License-MIT-red.svg" alt="License: MIT">
+  <img src="https://img.shields.io/github/stars/ahmedyar7/<repo-name>?style=social" alt="GitHub Repo stars">
+  <img src="https://img.shields.io/github/forks/ahmedyar7/<repo-name>?style=social" alt="GitHub forks">
+</p>
+
 An intelligent Sudoku solver that combines **Computer Vision**, **Optical Character Recognition (OCR)**, **Deep Learning (CNN)**, and **Recursive Backtracking (C++)** to solve Sudoku puzzles directly from images.
 
 This project demonstrates how classical **Data Structures & Algorithms (DSA)** can be blended with **modern AI techniques** to create robust and efficient systems.
