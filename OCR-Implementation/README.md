@@ -4,6 +4,10 @@ In this I have used EasyOCR module to extract the digits from the Image and cons
 
 ---
 
+## Note:
+
+- Pass the absolute path for the C++ helper function
+
 ## ✨ Features
 
 - Extracts Sudoku digits from an image using EasyOCR.

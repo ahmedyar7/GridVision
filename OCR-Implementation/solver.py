@@ -18,7 +18,9 @@ def solve_with_cpp(board):
     # For linux and macOS use .out instead of .exe
 
     result = subprocess.run(
-        ["../Helper/sudoko_solver.exe"],  # use "sudoku_solver.exe" on Windows
+        [
+            "D:/Git Repos/GridVision/Helper/sudoko_solver.exe"
+        ],  # use "sudoku_solver.exe" on Windows
         input=input_str,
         text=True,
         capture_output=True,
