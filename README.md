@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/License-MIT-red.svg" alt="License: MIT">
   <img src="https://img.shields.io/github/stars/ahmedyar7/GridVision?style=social" alt="GitHub Repo stars">
   <img src="https://img.shields.io/github/forks/ahmedyar7/GridVision?style=social" alt="GitHub forks">
-  <a href="https://medium.com/@your-username/your-article-slug" target="_blank">
+  <a href="https://medium.com/@ahmedyar7/from-pixels-to-solutions-an-intelligent-sudoku-solver-ddefe5709ca6" target="_blank">
     <img src="https://img.shields.io/badge/Medium-%23000000.svg?logo=medium&logoColor=white" alt="Medium" />
  </a>
 </p>
