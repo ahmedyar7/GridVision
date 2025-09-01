@@ -49,7 +49,7 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 ## 📂 Project Structure
 
 ```
-
+E
 ├── OCR-Implementation
 │   ├── gui.py              # GUI interface for Sudoku solver
 │   ├── img\_processing.py   # Image preprocessing & grid extraction
