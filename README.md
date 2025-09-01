@@ -1,9 +1,12 @@
-# [GridVision](https://medium.com/p/ddefe5709ca6/edit)
+<h1 align="center" >GridVision</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-red.svg" alt="License: MIT">
   <img src="https://img.shields.io/github/stars/ahmedyar7/GridVision?style=social" alt="GitHub Repo stars">
   <img src="https://img.shields.io/github/forks/ahmedyar7/GridVision?style=social" alt="GitHub forks">
+  <a href="https://medium.com/@your-username/your-article-slug" target="_blank">
+    <img src="https://img.shields.io/badge/Medium-%23000000.svg?logo=medium&logoColor=white" alt="Medium" />
+ </a>
 </p>
 
 An intelligent Sudoku solver that combines **Computer Vision**, **Optical Character Recognition (OCR)**, **Deep Learning (CNN)**, and **Recursive Backtracking (C++)** to solve Sudoku puzzles directly from images.
