@@ -1,7 +1,7 @@
 <h1 align="center" >GridVision</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-MIT-red.svg" alt="License: MIT">
+  <img src="https://img.shields.io/badge/License-GPL.version.3.0-red.svg" alt="License: MIT">
   <img src="https://img.shields.io/github/stars/ahmedyar7/GridVision?style=social" alt="GitHub Repo stars">
   <img src="https://img.shields.io/github/forks/ahmedyar7/GridVision?style=social" alt="GitHub forks">
   <a href="https://medium.com/@ahmedyar7/from-pixels-to-solutions-an-intelligent-sudoku-solver-ddefe5709ca6" target="_blank">
