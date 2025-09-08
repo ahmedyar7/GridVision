@@ -167,7 +167,7 @@ E
 
 ## 📝 License
 
-This project is licensed under the [MIT](./LICENSE) License — feel free to use and modify.
+This project is licensed under the [GPL-License](./LICENSE) License — feel free to use and modify.
 
 ---
 
