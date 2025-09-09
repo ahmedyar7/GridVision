@@ -1,4 +1,6 @@
-<h1 align="center" >GridVision</h1>
+<div align="center">
+  <img src="/assets/logo.png" align="center">
+</div>
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-GPL.version.3.0-red.svg" alt="License: MIT">
@@ -49,16 +51,17 @@ This project demonstrates how classical **Data Structures & Algorithms (DSA)** c
 ## 📂 Project Structure
 
 ```
+
 E
 ├── OCR-Implementation
-│   ├── gui.py              # GUI interface for Sudoku solver
-│   ├── img\_processing.py   # Image preprocessing & grid extraction
-│   ├── main.py             # Entry point for OCR + solver pipeline
-│   ├── ocr\_utils.py        # OCR utilities (digit extraction, 2D board creation)
-│   ├── solver.py           # Python wrapper to call C++ solver
-│   ├── utils.py            # Helper functions
+│ ├── gui.py # GUI interface for Sudoku solver
+│ ├── img_processing.py # Image preprocessing & grid extraction
+│ ├── main.py # Entry point for OCR + solver pipeline
+│ ├── ocr_utils.py # OCR utilities (digit extraction, 2D board creation)
+│ ├── solver.py # Python wrapper to call C++ solver
+│ ├── utils.py # Helper functions
 │
-├── Helper/sudoku_solver.cpp       # C++ recursive backtracking solver
+├── Helper/sudoku_solver.cpp # C++ recursive backtracking solver
 └── README.md
 
 ```
@@ -127,6 +130,8 @@ E
    cd GridVision
    ```
 
+````
+
 2. Install Python dependencies:
 
    ```bash
@@ -176,3 +181,4 @@ This project is licensed under the [GPL-License](./LICENSE) License — feel fre
 - [OpenCV](https://opencv.org/) for image preprocessing
 - [EasyOCR](https://github.com/JaidedAI/EasyOCR) for digit recognition
 - [GeeksforGeeks](https://www.geeksforgeeks.org/) for Sudoku references
+````
