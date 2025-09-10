@@ -130,8 +130,6 @@ E
    cd GridVision
    ```
 
-````
-
 2. Install Python dependencies:
 
    ```bash
@@ -181,4 +179,4 @@ This project is licensed under the [GPL-License](./LICENSE) License — feel fre
 - [OpenCV](https://opencv.org/) for image preprocessing
 - [EasyOCR](https://github.com/JaidedAI/EasyOCR) for digit recognition
 - [GeeksforGeeks](https://www.geeksforgeeks.org/) for Sudoku references
-````
+
