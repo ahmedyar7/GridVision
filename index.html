@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0e14">
+  <meta name="description" content="GridVision reads a Sudoku puzzle out of a photograph with OpenCV and EasyOCR (or a trained CNN), then solves it with a C++ recursive backtracking engine.">
+  <meta name="author" content="ahmedyar7">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GridVision">
+  <meta property="og:description" content="From pixels to solutions - an AI-powered Sudoku solver that reads a puzzle straight out of a photograph.">
+  <meta property="og:url" content="https://ahmedyar7.github.io/GridVision/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/ahmedyar7/GridVision/main/assets/logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GridVision">
+  <meta name="twitter:description" content="From pixels to solutions - an AI-powered Sudoku solver that reads a puzzle straight out of a photograph.">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/ahmedyar7/GridVision/main/assets/logo.png">
+
+  <!-- Favicon: a 3x3 sudoku block, drawn inline so the page ships with no asset dependencies. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0e14'/%3E%3Cg fill='%231f2937'%3E%3Crect x='3' y='3' width='8' height='8'/%3E%3Crect x='12' y='3' width='8' height='8'/%3E%3Crect x='21' y='3' width='8' height='8'/%3E%3Crect x='3' y='12' width='8' height='8'/%3E%3Crect x='12' y='12' width='8' height='8'/%3E%3Crect x='21' y='12' width='8' height='8'/%3E%3Crect x='3' y='21' width='8' height='8'/%3E%3Crect x='12' y='21' width='8' height='8'/%3E%3Crect x='21' y='21' width='8' height='8'/%3E%3C/g%3E%3Cg fill='%23f2b134'%3E%3Crect x='3' y='3' width='8' height='8'/%3E%3Crect x='12' y='12' width='8' height='8'/%3E%3Crect x='21' y='21' width='8' height='8'/%3E%3C/g%3E%3C/svg%3E">
+
+  <title>GridVision</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap">
+  <style>
+  /* ============================================================
+     GridVision — "Terminal Grid"
+     Single-theme, deliberately dark. Every color painted from a
+     token so the page holds on any host ground.
+     ============================================================ */
+  :root{
+    color-scheme: dark;
+
+    --bg:        #0a0e14;
+    --bg-panel:  #0d1117;
+    --bg-sunk:   #070a0f;
+    --line:      #1f2937;
+    --line-soft: #161d27;
+
+    --ink:       #e6e6e6;
+    --ink-dim:   #b3bdc7;
+    --muted:     #7c8a99;   /* cool slate, biased toward the teal accent */
+
+    --amber:     #f2b134;
+    --magenta:   #e0537c;
+    --cyan:      #3ea6b8;
+    --purple:    #8b5cf6;
+    --green:     #3ecf6e;
+
+    --mono:  "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --display: "Space Mono", "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+    --shell:  min(1120px, 100% - 3rem);
+    --radius: 4px;
+
+    --s1: .5rem;  --s2: .875rem; --s3: 1.25rem;
+    --s4: 2rem;   --s5: 3.25rem; --s6: 5.5rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* --- Ambient sudoku grid: thin cell rules, heavy every 3rd --- */
+  .backdrop{
+    position: fixed;
+    inset: -10vh -10vw;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right,  var(--line-soft) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px),
+      linear-gradient(to right,  var(--line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px, 192px 192px, 192px 192px;
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, rgba(0,0,0,.55) 45%, transparent 78%);
+            mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, rgba(0,0,0,.55) 45%, transparent 78%);
+    opacity: .85;
+  }
+
+  .shell{ width: var(--shell); margin-inline: auto; }
+  main{ position: relative; z-index: 1; }
+
+  a{ color: var(--cyan); text-decoration-color: color-mix(in srgb, var(--cyan) 40%, transparent); text-underline-offset: 3px; }
+  a:hover{ color: color-mix(in srgb, var(--cyan) 80%, #fff); }
+  :focus-visible{ outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 2px; }
+
+  h1,h2,h3{ font-family: var(--display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: -.01em; }
+  h2{ font-size: clamp(1.4rem, 3.2vw, 2rem); line-height: 1.25; }
+  h3{ font-size: 1rem; letter-spacing: .01em; }
+  p{ margin: 0; }
+  .prose{ max-width: 66ch; color: var(--ink-dim); }
+
+  /* ============================ SECTIONS ============================ */
+  section{ padding-block: var(--s6); border-top: 1px solid var(--line); position: relative; }
+  section:first-of-type{ border-top: 0; }
+
+  .sec-head{ display: flex; align-items: flex-start; gap: var(--s3); margin-bottom: var(--s4); }
+  .sec-head .titles{ display: flex; flex-direction: column; gap: var(--s1); }
+  .eyebrow{
+    font-size: .7rem; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Section marker: a 3x3 sudoku block whose filled cells count the section */
+  .blockmark{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+    width: 30px; height: 30px; flex: none; margin-top: 6px;
+    padding: 3px; border: 1px solid var(--line);
+    background: var(--bg-panel);
+  }
+  .blockmark i{ background: var(--line); border-radius: 1px; }
+  .blockmark i.on{ background: var(--amber); }
+
+  /* ============================ HERO ============================ */
+  .hero{ padding-block: clamp(4rem, 11vw, 8rem) var(--s6); text-align: center; }
+  .hero-inner{ display: flex; flex-direction: column; align-items: center; gap: var(--s4); }
+
+  /* Pixel wordmark — the logo rebuilt as a real grid of cells */
+  .wordmark{ display: flex; flex-direction: column; align-items: center; gap: calc(var(--px) * 1.6); --px: clamp(5px, 1.9vw, 15px); }
+  .wm-line{ display: grid; gap: 1px; }
+  .wm-line .cell{ width: var(--px); height: var(--px); background: transparent; }
+  .wm-line .cell.on{
+    background: var(--ink);
+    box-shadow: 0 0 0 1px rgba(10,14,20,.9) inset, 0 0 10px rgba(242,177,52,.16);
+    opacity: 0; transform: scale(.4);
+    animation: fillin .38s cubic-bezier(.2,.9,.3,1.4) forwards;
+    animation-delay: var(--d, 0ms);
+  }
+  @keyframes fillin{ to{ opacity: 1; transform: scale(1); } }
+
+  .tagline{ font-size: clamp(.95rem, 2.2vw, 1.15rem); color: var(--ink-dim); max-width: 46ch; }
+  .tagline b{ color: var(--amber); font-weight: 500; }
+
+  .cta-row{ display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
+  .btn{
+    font-family: var(--mono); font-size: .875rem; font-weight: 500;
+    padding: .7rem 1.35rem; border-radius: var(--radius);
+    text-decoration: none; display: inline-flex; align-items: center; gap: .6rem;
+    border: 1px solid transparent; transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn-primary{ background: var(--amber); color: #14100a; border-color: var(--amber); }
+  .btn-primary:hover{ color: #14100a; transform: translateY(-2px); box-shadow: 0 8px 24px -8px rgba(242,177,52,.6); }
+  .btn-ghost{ background: transparent; color: var(--cyan); border-color: color-mix(in srgb, var(--cyan) 45%, var(--line)); }
+  .btn-ghost:hover{ transform: translateY(-2px); border-color: var(--cyan); box-shadow: 0 8px 24px -10px rgba(62,166,184,.55); background: rgba(62,166,184,.06); }
+
+  .badge-row{ display: flex; flex-wrap: wrap; gap: var(--s1); justify-content: center; }
+  .badge{
+    font-size: .72rem; letter-spacing: .06em; color: var(--muted);
+    border: 1px solid var(--line); background: var(--bg-panel);
+    padding: .28rem .6rem; border-radius: var(--radius);
+    display: inline-flex; align-items: center; gap: .45rem; text-decoration: none;
+  }
+  .badge:hover{ color: var(--ink-dim); border-color: color-mix(in srgb, var(--amber) 40%, var(--line)); }
+  .badge .k{ color: var(--amber); }
+  .badge .k.c{ color: var(--cyan); }
+
+  /* ======================= TERMINAL WINDOW CHROME ======================= */
+  .term{
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+  .term-bar{
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-sunk);
+  }
+  .term-bar .dot{ width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .term-bar .dot:nth-child(1){ background: var(--magenta); }
+  .term-bar .dot:nth-child(2){ background: var(--amber); }
+  .term-bar .dot:nth-child(3){ background: var(--green); }
+  .term-bar .name{ margin-left: .4rem; font-size: .7rem; color: var(--muted); letter-spacing: .05em; }
+  .term-body{ padding: var(--s3); flex: 1; }
+
+  /* Faint CRT scanline over terminal surfaces */
+  .term::after{
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(255,255,255,.021) 0 1px, transparent 1px 3px);
+  }
+
+  /* ======================= FEATURE CARDS (3x3 nod) ======================= */
+  .cards{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .card{ background: var(--bg-panel); padding: var(--s4) var(--s3); display: flex; flex-direction: column; gap: var(--s1); transition: background .18s ease, box-shadow .18s ease, transform .18s ease; }
+  .card:hover{ background: #0f151d; transform: translateY(-2px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, var(--amber)) 45%, transparent); }
+  .card .glyph{ font-size: 1.25rem; line-height: 1; }
+  .card h3{ color: var(--ink); }
+  .card .lib{ font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent, var(--amber)); }
+  .card p{ color: var(--muted); font-size: .84rem; line-height: 1.65; }
+
+  /* ======================= PIPELINE ======================= */
+  .pipe{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; align-items: stretch; }
+  .pipe .step{ position: relative; display: flex; }
+  .pipe .term{ width: 100%; }
+  .pipe .step + .step{ padding-left: 26px; }
+  .pipe .step + .step::before{
+    content: ""; position: absolute; left: 4px; top: 50%; width: 18px; height: 1px;
+    background: linear-gradient(to right, transparent, var(--wire, var(--cyan)));
+  }
+  .pipe .step + .step::after{
+    content: ""; position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    border-left: 5px solid var(--wire, var(--cyan));
+    border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  }
+  .step .n{ font-size: .68rem; letter-spacing: .16em; color: var(--wire, var(--cyan)); text-transform: uppercase; }
+  .step h3{ font-size: .95rem; margin-block: .35rem .4rem; }
+  .step p{ font-size: .78rem; color: var(--muted); line-height: 1.6; }
+
+  /* ======================= BOARDS ======================= */
+  .boards{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  .ascii{ margin: 0; font-family: var(--mono); font-size: clamp(.68rem, 1.45vw, .82rem); line-height: 1.5; color: var(--muted); overflow-x: auto; }
+  .ascii .rule{ color: var(--line); }
+  .ascii .bar{ color: #35414f; }
+  .ascii .zero{ color: #2b3542; }
+  .ascii .clue{ color: var(--amber); font-weight: 700; }
+  .ascii .solved{ color: var(--green); font-weight: 700; }
+  .term-cap{ font-size: .72rem; color: var(--muted); padding: 0 var(--s3) var(--s3); }
+  .term-cap b{ color: var(--ink-dim); font-weight: 500; }
+
+  /* Human-readable solved grid */
+  .readable{ display: flex; flex-direction: column; align-items: center; gap: var(--s3); margin-top: var(--s5); }
+  .sudoku{
+    display: grid; grid-template-columns: repeat(9, 1fr);
+    width: min(430px, 100%); aspect-ratio: 1;
+    border: 2px solid var(--line); background: var(--bg-panel);
+  }
+  .sudoku .sq{
+    display: grid; place-items: center;
+    font-size: clamp(.8rem, 2.6vw, 1.05rem); font-variant-numeric: tabular-nums;
+    border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
+    color: var(--green); background: rgba(62,207,110,.07); font-weight: 500;
+    opacity: 0; transition: opacity .3s ease;
+  }
+  .sudoku .sq.given{ color: var(--ink); background: transparent; font-weight: 700; opacity: 1; }
+  .sudoku.lit .sq{ opacity: 1; }
+  .sudoku .sq:nth-child(9n){ border-right: 0; }
+  .sudoku .sq:nth-child(n+73){ border-bottom: 0; }
+  .sudoku .sq.br{ border-right-width: 2px; border-right-color: var(--line); }
+  .sudoku .sq.bb{ border-bottom-width: 2px; border-bottom-color: var(--line); }
+  .legend{ display: flex; gap: var(--s3); flex-wrap: wrap; justify-content: center; font-size: .74rem; color: var(--muted); }
+  .legend span{ display: inline-flex; align-items: center; gap: .45rem; }
+  .legend i{ width: 10px; height: 10px; border: 1px solid currentColor; display: inline-block; }
+  .legend .l-given{ color: var(--ink-dim); }
+  .legend .l-solved{ color: var(--green); }
+
+  /* ======================= CNN ======================= */
+  .cnn-wrap{ border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-panel); padding: var(--s4) var(--s3); overflow-x: auto; }
+  .cnn-wrap svg{ display: block; min-width: 640px; width: 100%; height: auto; }
+  .cnn-legend{ display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s3); font-size: .74rem; color: var(--muted); padding-inline: var(--s1); }
+  .cnn-legend span{ display: inline-flex; align-items: center; gap: .5rem; }
+  .cnn-legend i{ width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+  /* ======================= TECH CHIPS ======================= */
+  .chips{ display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--s2); }
+  .chip{
+    border: 1px solid var(--line); border-left: 2px solid var(--cyan);
+    background: var(--bg-panel); border-radius: var(--radius);
+    padding: .7rem .9rem; display: flex; flex-direction: column; gap: .1rem;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .chip:hover{ transform: translateY(-2px); border-color: color-mix(in srgb, var(--cyan) 45%, var(--line)); border-left-color: var(--cyan); box-shadow: 0 8px 22px -14px rgba(62,166,184,.7); }
+  .chip .nm{ font-size: .85rem; color: var(--ink); font-weight: 500; }
+  .chip .role{ font-size: .7rem; color: var(--muted); }
+
+  /* ======================= INSTALL ======================= */
+  .cmd{ display: block; white-space: pre; font-size: .82rem; }
+  .cmd + .cmd{ margin-top: .85rem; }
+  .cmd .p{ color: var(--green); user-select: none; }
+  .cmd .c{ color: var(--ink); }
+  .cmd .f{ color: var(--cyan); }
+  .cmd .note{ display: block; color: var(--muted); font-size: .72rem; padding-left: 1.4ch; white-space: pre-wrap; }
+  .caret{ display: inline-block; width: .55em; height: 1.05em; background: var(--amber); vertical-align: -.18em; margin-left: .3ch; animation: blink 1.05s step-end infinite; }
+  @keyframes blink{ 50%{ opacity: 0; } }
+
+  /* ======================= ROADMAP ======================= */
+  .todo{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .todo li{ background: var(--bg-panel); padding: .95rem var(--s3); display: flex; gap: .9rem; align-items: baseline; font-size: .88rem; transition: background .15s ease; }
+  .todo li:hover{ background: #0f151d; }
+  .todo .box{ color: var(--purple); flex: none; font-weight: 700; }
+  .todo .txt{ color: var(--ink-dim); }
+  .todo .why{ color: var(--muted); font-size: .76rem; margin-left: auto; text-align: right; }
+
+  /* ======================= FOOTER ======================= */
+  footer{ border-top: 1px solid var(--line); padding-block: var(--s5) var(--s4); position: relative; z-index: 1; }
+  .foot-grid{ display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between; align-items: flex-start; }
+  .foot-links{ display: flex; flex-direction: column; gap: .35rem; font-size: .82rem; }
+  .foot-meta{ font-size: .76rem; color: var(--muted); max-width: 46ch; display: flex; flex-direction: column; gap: .4rem; }
+  .foot-mark{ --px: 4px; }
+  .foot-mark .wm-line .cell.on{ animation: none; opacity: .55; transform: none; box-shadow: none; }
+
+  /* ======================= REVEAL ======================= */
+  .reveal{ opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+  .reveal.in{ opacity: 1; transform: none; }
+
+  /* ======================= RESPONSIVE ======================= */
+  @media (max-width: 860px){
+    :root{ --shell: min(1120px, 100% - 2rem); --s6: 4rem; }
+    .pipe{ grid-template-columns: 1fr; gap: 26px; }
+    .pipe .step + .step{ padding-left: 0; }
+    .pipe .step + .step::before{ left: 50%; top: -18px; width: 1px; height: 12px; background: linear-gradient(to bottom, transparent, var(--wire, var(--cyan))); }
+    .pipe .step + .step::after{ left: 50%; top: -8px; transform: translateX(-50%);
+      border-left: 4px solid transparent; border-right: 4px solid transparent;
+      border-top: 5px solid var(--wire, var(--cyan)); border-bottom: 0; }
+    .boards{ grid-template-columns: 1fr; }
+    .cards{ grid-template-columns: 1fr; }
+    .todo .why{ display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    .wm-line .cell.on{ opacity: 1; transform: none; }
+    .reveal{ opacity: 1; transform: none; }
+    .caret{ opacity: 1; }
+  }
+  </style>
+</head>
+
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<main>
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero shell">
+    <div class="hero-inner">
+      <div class="wordmark" id="wordmark" role="img" aria-label="GridVision"></div>
+
+      <p class="tagline">From pixels to solutions — an <b>AI-powered Sudoku solver</b> that reads a puzzle straight out of a photograph.</p>
+
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/ahmedyar7/GridVision" target="_blank" rel="noopener">View on GitHub</a>
+        <a class="btn btn-ghost" href="https://medium.com/@ahmedyar7/from-pixels-to-solutions-an-intelligent-sudoku-solver-ddefe5709ca6" target="_blank" rel="noopener">Read the write-up</a>
+      </div>
+
+      <div class="badge-row">
+        <a class="badge" href="https://github.com/ahmedyar7/GridVision/stargazers" target="_blank" rel="noopener"><span class="k">&#9733;</span> star</a>
+        <a class="badge" href="https://github.com/ahmedyar7/GridVision/forks" target="_blank" rel="noopener"><span class="k c">&#8623;</span> fork</a>
+        <a class="badge" href="https://github.com/ahmedyar7/GridVision/blob/main/LICENSE" target="_blank" rel="noopener"><span class="k">license</span> GPL-3.0</a>
+        <span class="badge"><span class="k c">lang</span> Python + C++</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ WHAT IT DOES ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="1" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">What it does</span>
+        <h2>Four pieces, one board.</h2>
+      </div>
+    </div>
+
+    <p class="prose" style="margin-bottom: var(--s4)">GridVision takes a photograph of a Sudoku puzzle, finds the grid inside it with OpenCV, reads all eighty-one cells with OCR or a trained CNN, and hands the resulting 9&times;9 array to a C++ backtracking engine. What comes back is a finished board — in the terminal and in the GUI.</p>
+
+    <div class="cards">
+      <article class="card" style="--accent: var(--amber)">
+        <span class="glyph">&#128248;</span>
+        <span class="lib">OpenCV</span>
+        <h3>Find the grid</h3>
+        <p>Grayscale, Gaussian blur, adaptive threshold, contour detection, then a perspective warp that flattens a photographed puzzle into a clean square.</p>
+      </article>
+      <article class="card" style="--accent: var(--cyan)">
+        <span class="glyph">&#128269;</span>
+        <span class="lib">EasyOCR</span>
+        <h3>Read the digits</h3>
+        <p>Each of the eighty-one cells is cropped and passed through EasyOCR. Whatever comes back empty becomes a zero — the solver's marker for an open square.</p>
+      </article>
+      <article class="card" style="--accent: var(--magenta)">
+        <span class="glyph">&#129302;</span>
+        <span class="lib">TensorFlow / Keras</span>
+        <h3>Or use the CNN</h3>
+        <p>A custom convolutional model trained on digit images stands in for OCR when the photo is noisy, low-contrast, or shot at an angle.</p>
+      </article>
+      <article class="card" style="--accent: var(--purple)">
+        <span class="glyph">&#129518;</span>
+        <span class="lib">C++ / g++</span>
+        <h3>Solve it</h3>
+        <p>Recursive backtracking in C++ — row, column and 3&times;3 box checks on every candidate digit, called from Python through a compiled binary.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================ PIPELINE ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="2" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">How it works</span>
+        <h2>The pipeline, end to end.</h2>
+      </div>
+    </div>
+
+    <div class="pipe">
+      <div class="step" style="--wire: var(--amber)">
+        <div class="term"><div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="term-body">
+            <span class="n">Step 1</span>
+            <h3>Preprocess</h3>
+            <p>Grayscale &rarr; blur &rarr; adaptive threshold &rarr; contour &rarr; warp.</p>
+          </div></div>
+      </div>
+      <div class="step" style="--wire: var(--cyan)">
+        <div class="term"><div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="term-body">
+            <span class="n">Step 2</span>
+            <h3>Recognize digits</h3>
+            <p>EasyOCR or the CNN classifies every one of the 81 cells.</p>
+          </div></div>
+      </div>
+      <div class="step" style="--wire: var(--cyan)">
+        <div class="term"><div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="term-body">
+            <span class="n">Step 3</span>
+            <h3>Build board</h3>
+            <p>Digits land in a 9&times;9 array. Blank cells are stored as 0.</p>
+          </div></div>
+      </div>
+      <div class="step" style="--wire: var(--purple)">
+        <div class="term"><div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="term-body">
+            <span class="n">Step 4</span>
+            <h3>Solve</h3>
+            <p>The C++ backtracker fills every zero, or reports no solution.</p>
+          </div></div>
+      </div>
+      <div class="step" style="--wire: var(--green)">
+        <div class="term"><div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="term-body">
+            <span class="n">Step 5</span>
+            <h3>Output</h3>
+            <p>Printed to the CLI and drawn as a PNG for the PySide6 window.</p>
+          </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ IN ACTION ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="3" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">See it in action</span>
+        <h2>What the terminal prints.</h2>
+      </div>
+    </div>
+
+    <div class="boards">
+      <div class="term">
+        <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="name">extracted</span></div>
+        <div class="term-body"><pre class="ascii" id="board-in"></pre></div>
+        <p class="term-cap"><b>Extracted Sudoku Board</b> &mdash; 16 clues read off the photo. Every <span style="color:#2b3542">0</span> is a cell the OCR pass found empty.</p>
+      </div>
+      <div class="term">
+        <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="name">solved</span></div>
+        <div class="term-body"><pre class="ascii" id="board-out"></pre></div>
+        <p class="term-cap"><b>Solved Sudoku Board</b> &mdash; 65 cells filled by the C++ backtracker. The original clues stay amber.</p>
+      </div>
+    </div>
+
+    <div class="readable">
+      <div class="sudoku" id="sudoku" role="img" aria-label="The solved Sudoku board: original clues in white, solved cells in green"></div>
+      <div class="legend">
+        <span class="l-given"><i style="background:transparent"></i> clue read from the image</span>
+        <span class="l-solved"><i style="background:rgba(62,207,110,.18)"></i> filled by the solver</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CNN ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="4" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">The CNN model</span>
+        <h2>An alternative set of eyes.</h2>
+      </div>
+    </div>
+
+    <p class="prose" style="margin-bottom: var(--s4)">OCR is fast and needs no training, but it gets brittle on shadows, glare and hand-drawn grids. The CNN path trades that setup cost for robustness: convolution and pooling stacks learn what a digit looks like under noise, so a photo that defeats EasyOCR can still be read cell by cell.</p>
+
+    <div class="cnn-wrap">
+      <svg id="cnn" viewBox="0 0 900 220" role="img" aria-label="CNN architecture: three Conv2D layers, MaxPooling2D, three more Conv2D layers, MaxPooling2D, Dropout, Flatten, then three Dense layers"></svg>
+      <div class="cnn-legend">
+        <span><i style="background:var(--amber)"></i> Conv2D</span>
+        <span><i style="background:var(--magenta)"></i> MaxPooling2D</span>
+        <span><i style="background:var(--cyan)"></i> Dropout</span>
+        <span><i style="background:#0e3b45"></i> Flatten</span>
+        <span><i style="background:var(--purple)"></i> Dense</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TECH STACK ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="5" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">Tech stack</span>
+        <h2>What it is built on.</h2>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="chip"><span class="nm">OpenCV</span><span class="role">grid detection &amp; warping</span></div>
+      <div class="chip"><span class="nm">NumPy</span><span class="role">cell arrays &amp; board math</span></div>
+      <div class="chip"><span class="nm">EasyOCR</span><span class="role">digit recognition</span></div>
+      <div class="chip"><span class="nm">TensorFlow</span><span class="role">CNN training</span></div>
+      <div class="chip"><span class="nm">Keras</span><span class="role">model definition</span></div>
+      <div class="chip"><span class="nm">C++</span><span class="role">recursive backtracking solver</span></div>
+      <div class="chip"><span class="nm">PySide6</span><span class="role">desktop interface</span></div>
+      <div class="chip"><span class="nm">Pillow</span><span class="role">rendering the solved board</span></div>
+      <div class="chip"><span class="nm">Matplotlib</span><span class="role">debug &amp; cell previews</span></div>
+    </div>
+  </section>
+
+  <!-- ============================ GET STARTED ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="6" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">Get started</span>
+        <h2>Four commands to a solved board.</h2>
+      </div>
+    </div>
+
+    <div class="term">
+      <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="name">bash &mdash; GridVision</span></div>
+      <div class="term-body">
+        <code class="cmd"><span class="p">$ </span><span class="c">git clone </span><span class="f">https://github.com/ahmedyar7/GridVision.git</span>
+<span class="p">$ </span><span class="c">cd </span><span class="f">GridVision</span></code>
+        <code class="cmd"><span class="p">$ </span><span class="c">pip install -r </span><span class="f">requirements.txt</span><span class="note"># opencv-python, numpy, easyocr, matplotlib, tensorflow, torch</span></code>
+        <code class="cmd"><span class="p">$ </span><span class="c">g++ </span><span class="f">sudoku_solver.cpp</span><span class="c"> -o </span><span class="f">sudoku_solver</span><span class="note"># the solver lives in Helper/</span></code>
+        <code class="cmd"><span class="p">$ </span><span class="c">python </span><span class="f">.\OCR-Implementation\main.py</span><span class="caret" aria-hidden="true"></span></code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ ROADMAP ============================ -->
+  <section class="shell reveal">
+    <div class="sec-head">
+      <div class="blockmark" data-n="7" aria-hidden="true"></div>
+      <div class="titles">
+        <span class="eyebrow">Roadmap</span>
+        <h2>Still open.</h2>
+      </div>
+    </div>
+
+    <ul class="todo">
+      <li><span class="box">[ ]</span><span class="txt">Real-time solving from a camera feed</span><span class="why">solve while you point the lens</span></li>
+      <li><span class="box">[ ]</span><span class="txt">Mobile app integration</span><span class="why">the phone already has the camera</span></li>
+      <li><span class="box">[ ]</span><span class="txt">Train the CNN on a larger dataset</span><span class="why">fewer misreads on hard photos</span></li>
+      <li><span class="box">[ ]</span><span class="txt">Cloud API for uploaded puzzles</span><span class="why">solve without a local build</span></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <div class="shell foot-grid">
+    <div class="foot-links">
+      <a href="https://github.com/ahmedyar7/GridVision" target="_blank" rel="noopener">github.com/ahmedyar7/GridVision</a>
+      <a href="https://medium.com/@ahmedyar7/from-pixels-to-solutions-an-intelligent-sudoku-solver-ddefe5709ca6" target="_blank" rel="noopener">From Pixels to Solutions &mdash; the write-up</a>
+      <a href="https://github.com/ahmedyar7/GridVision/blob/main/LICENSE" target="_blank" rel="noopener">GPL v3.0 license</a>
+    </div>
+    <div class="foot-meta">
+      <span>Built with <a href="https://opencv.org/" target="_blank" rel="noopener">OpenCV</a>, <a href="https://github.com/JaidedAI/EasyOCR" target="_blank" rel="noopener">EasyOCR</a>, and Sudoku references from <a href="https://www.geeksforgeeks.org/" target="_blank" rel="noopener">GeeksforGeeks</a>.</span>
+      <span>Licensed under GPL v3.0 &mdash; use it, fork it, change it.</span>
+    </div>
+    <div class="wordmark foot-mark" id="wordmark-foot" role="img" aria-label="GridVision"></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------------------------------------------------------------
+     1. The wordmark. The logo is a grid of pixels, so it is built as
+        one — 5x7 bitmaps rendered into a CSS grid of cells.
+     --------------------------------------------------------------- */
+  var GLYPHS = {
+    G: ["01110","10001","10000","10111","10001","10001","01110"],
+    R: ["11110","10001","10001","11110","10100","10010","10001"],
+    I: ["11111","00100","00100","00100","00100","00100","11111"],
+    D: ["11110","10001","10001","10001","10001","10001","11110"],
+    V: ["10001","10001","10001","10001","10001","01010","00100"],
+    S: ["01111","10000","10000","01110","00001","00001","11110"],
+    O: ["01110","10001","10001","10001","10001","10001","01110"],
+    N: ["10001","11001","10101","10101","10011","10001","10001"]
+  };
+
+  function renderWord(host, word, animate) {
+    var rows = 7, cols = word.length * 6 - 1, r, c, i, letter, bit;
+    var line = document.createElement("div");
+    line.className = "wm-line";
+    line.style.gridTemplateColumns = "repeat(" + cols + ", var(--px))";
+    for (r = 0; r < rows; r++) {
+      for (c = 0; c < cols; c++) {
+        i = Math.floor(c / 6);
+        letter = word[i];
+        bit = (c % 6 === 5) ? "0" : GLYPHS[letter][r][c % 6];
+        var cell = document.createElement("span");
+        cell.className = bit === "1" ? "cell on" : "cell";
+        if (bit === "1" && animate) cell.style.setProperty("--d", (c * 11 + r * 26) + "ms");
+        line.appendChild(cell);
+      }
+    }
+    host.appendChild(line);
+  }
+
+  var wm = document.getElementById("wordmark");
+  if (wm) { renderWord(wm, "GRID", !reduced); renderWord(wm, "VISION", !reduced); }
+  var wmf = document.getElementById("wordmark-foot");
+  if (wmf) { renderWord(wmf, "GRID", false); renderWord(wmf, "VISION", false); }
+
+  /* ---------------------------------------------------------------
+     2. Section markers. Each is a 3x3 sudoku block with as many cells
+        filled as the section's position — the count is the numbering.
+     --------------------------------------------------------------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".blockmark"), function (bm) {
+    var n = parseInt(bm.getAttribute("data-n"), 10) || 0;
+    for (var i = 0; i < 9; i++) {
+      var cell = document.createElement("i");
+      if (i < n) cell.className = "on";
+      bm.appendChild(cell);
+    }
+  });
+
+  /* ---------------------------------------------------------------
+     3. The board. Real output from OCR-Implementation/main.py — the
+        extracted clues and the board the C++ solver returns.
+     --------------------------------------------------------------- */
+  var PUZZLE = [
+    [4,5,0, 0,0,0, 0,0,0],
+    [0,0,2, 0,7,0, 0,0,0],
+    [0,0,0, 0,0,0, 0,2,8],
+    [0,0,0, 0,5,0, 0,0,0],
+    [0,8,0, 0,0,0, 2,0,0],
+    [0,2,0, 0,0,0, 0,5,0],
+    [0,1,0, 0,0,0, 4,0,0],
+    [0,0,0, 0,4,5, 0,0,0],
+    [0,0,8, 0,0,0, 0,0,0]
+  ];
+  var SOLUTION = [
+    [4,5,1, 2,3,8, 6,7,9],
+    [8,3,2, 6,7,9, 1,4,5],
+    [6,7,9, 5,1,4, 3,2,8],
+    [1,6,3, 7,5,2, 9,8,4],
+    [5,8,7, 4,9,1, 2,3,6],
+    [9,2,4, 8,6,3, 7,5,1],
+    [2,1,5, 9,8,7, 4,6,3],
+    [7,9,6, 3,4,5, 8,1,2],
+    [3,4,8, 1,2,6, 5,9,7]
+  ];
+
+  var RULE = '<span class="rule">+-------+-------+-------+</span>';
+
+  function asciiBoard(board, solvedStyle) {
+    var out = [RULE], r, c, row, v, cls;
+    for (r = 0; r < 9; r++) {
+      row = '<span class="bar">|</span>';
+      for (c = 0; c < 9; c++) {
+        v = board[r][c];
+        if (v === 0) cls = "zero";
+        else if (!solvedStyle || PUZZLE[r][c] !== 0) cls = "clue";
+        else cls = "solved";
+        row += ' <span class="' + cls + '">' + v + "</span>";
+        if (c % 3 === 2) row += ' <span class="bar">|</span>';
+      }
+      out.push(row);
+      if (r % 3 === 2) out.push(RULE);
+    }
+    return out.join("\n");
+  }
+
+  var bIn = document.getElementById("board-in");
+  var bOut = document.getElementById("board-out");
+  if (bIn) bIn.innerHTML = asciiBoard(PUZZLE, false);
+  if (bOut) bOut.innerHTML = asciiBoard(SOLUTION, true);
+
+  /* The same solution, drawn the way a person reads a Sudoku. */
+  var grid = document.getElementById("sudoku");
+  if (grid) {
+    for (var r = 0; r < 9; r++) {
+      for (var c = 0; c < 9; c++) {
+        var sq = document.createElement("div");
+        var given = PUZZLE[r][c] !== 0;
+        sq.className = "sq" + (given ? " given" : "") +
+                       (c === 2 || c === 5 ? " br" : "") +
+                       (r === 2 || r === 5 ? " bb" : "");
+        sq.textContent = SOLUTION[r][c];
+        if (!given && !reduced) sq.style.transitionDelay = ((r * 9 + c) * 9) + "ms";
+        grid.appendChild(sq);
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     4. The CNN stack, rebuilt as extruded blocks so it reads the way
+        the model's own architecture diagram does.
+     --------------------------------------------------------------- */
+  var svg = document.getElementById("cnn");
+  if (svg) {
+    var NS = "http://www.w3.org/2000/svg";
+    var COLOR = {
+      conv:    "#f2b134",
+      pool:    "#e0537c",
+      dropout: "#3ea6b8",
+      flatten: "#0e3b45",
+      dense:   "#8b5cf6"
+    };
+    var LAYERS = [
+      { t:"conv", w:20, h:150 }, { t:"conv", w:20, h:146 }, { t:"conv", w:20, h:142 },
+      { t:"pool", w:14, h:110 },
+      { t:"conv", w:17, h:104 }, { t:"conv", w:17, h:100 }, { t:"conv", w:17, h:96 },
+      { t:"pool", w:13, h:74 },
+      { t:"dropout", w:16, h:60 },
+      { t:"flatten", w:300, h:34 },
+      { t:"dense", w:26, h:44 }, { t:"dropout", w:26, h:40 }, { t:"dense", w:22, h:30 }
+    ];
+
+    var d = 16, cy = 112, x = 40, gap = 6, i, L, top, side, front;
+
+    function shade(hex, amt) {
+      var n = parseInt(hex.slice(1), 16);
+      var ch = [n >> 16, (n >> 8) & 255, n & 255].map(function (v) {
+        return Math.max(0, Math.min(255, Math.round(v + amt)));
+      });
+      return "rgb(" + ch.join(",") + ")";
+    }
+    function poly(points, fill) {
+      var p = document.createElementNS(NS, "polygon");
+      p.setAttribute("points", points);
+      p.setAttribute("fill", fill);
+      p.setAttribute("stroke", "#05080c");
+      p.setAttribute("stroke-width", "1.1");
+      p.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(p);
+    }
+
+    for (i = 0; i < LAYERS.length; i++) {
+      L = LAYERS[i];
+      var base = COLOR[L.t];
+      var y = cy - L.h / 2;
+      /* right face, then top, then front — painted back to front */
+      poly([x + L.w, y, x + L.w + d, y - d, x + L.w + d, y - d + L.h, x + L.w, y + L.h].join(" "), shade(base, -46));
+      poly([x, y, x + L.w, y, x + L.w + d, y - d, x + d, y - d].join(" "), shade(base, 34));
+      poly([x, y, x + L.w, y, x + L.w, y + L.h, x, y + L.h].join(" "), base);
+      x += L.w + gap;
+    }
+    svg.setAttribute("viewBox", "0 0 " + (x + d + 40) + " 220");
+  }
+
+  /* ---------------------------------------------------------------
+     5. Reveal on scroll. The solved board lights up cell by cell.
+     --------------------------------------------------------------- */
+  if (!reduced && "IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.08 });
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function (el) { io.observe(el); });
+
+    if (grid) {
+      var gio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.classList.add("lit");
+          gio.unobserve(e.target);
+        });
+      }, { threshold: 0.25 });
+      gio.observe(grid);
+    }
+  } else {
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function (el) { el.classList.add("in"); });
+    if (grid) grid.classList.add("lit");
+  }
+})();
+</script>
+
+</body>
+</html>

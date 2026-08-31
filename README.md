@@ -68,6 +68,50 @@ E
 
 ---
 
+## 🧭 System Design
+
+The recognition stage is the only swappable part of the pipeline. Everything before it
+(grid extraction) and everything after it (board assembly, solving, output) is shared —
+so EasyOCR and the custom CNN are drop-in alternatives for the same job.
+
+```mermaid
+flowchart TB
+    IMG(["Sudoku photo"]) --> GUI["PySide6 GUI<br/>OCR-Implementation/main.py"]
+    GUI --> PRE["OpenCV preprocessing<br/>grayscale, blur, adaptive threshold,<br/>contour detection, perspective warp"]
+
+    PRE --> OCR["EasyOCR<br/>ocr_utils.py"]
+    PRE -.->|alternative| CNN["Custom CNN<br/>TensorFlow / Keras<br/>CNN-Implementation/main.h5"]
+
+    OCR --> BOARD["9x9 integer board<br/>empty cells stored as 0"]
+    CNN -.-> BOARD
+
+    BOARD --> SOLVE["Recursive backtracking<br/>Helper/sudoko_solver.cpp"]
+    SOLVE --> OUT(["Solved board<br/>CLI grid + PNG render"])
+
+    classDef io fill:#e2e8f0,stroke:#94a3b8,color:#0f172a
+    classDef cv fill:#f2b134,stroke:#c98f22,color:#1a1206
+    classDef ocr fill:#3ea6b8,stroke:#2d7d8b,color:#04181c
+    classDef cnn fill:#e0537c,stroke:#b13e61,color:#2a0a14
+    classDef data fill:#cbd5e1,stroke:#94a3b8,color:#0f172a
+    classDef solve fill:#8b5cf6,stroke:#6d3fd4,color:#f5f0ff
+    classDef done fill:#3ecf6e,stroke:#2fa557,color:#062814
+
+    class IMG io
+    class GUI data
+    class PRE cv
+    class OCR ocr
+    class CNN cnn
+    class BOARD data
+    class SOLVE solve
+    class OUT done
+```
+
+> **Solid arrows** trace the default OCR path; the **dotted branch** is the CNN
+> alternative, which trades setup cost for robustness on noisy or angled photos.
+> A hand-drawn version of this diagram lives at [`assets/sysDesign.png`](assets/sysDesign.png).
+
+---
+
 ## ⚙️ How It Works
 
 1. **Image Preprocessing**
